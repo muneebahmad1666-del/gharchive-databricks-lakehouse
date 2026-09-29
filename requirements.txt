@@ -1,0 +1,3 @@
+# Runtime extras on top of the Airflow image
+apache-airflow-providers-databricks
+requests

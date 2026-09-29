@@ -1,0 +1,4 @@
+# Used by GitHub Actions and local checks (no Airflow needed)
+requests
+pytest
+ruff

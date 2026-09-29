@@ -1,0 +1,10 @@
+name: gharchive_dbt
+version: "0.1.0"
+profile: gharchive_dbt
+model-paths: ["models"]
+models:
+  gharchive_dbt:
+    staging:
+      +schema: silver
+    marts:
+      +schema: gold

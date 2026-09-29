@@ -1,0 +1,21 @@
+bundle:
+  name: gharchive_databricks_lakehouse
+
+resources:
+  jobs:
+    gharchive_bronze_ingest:
+      name: gharchive_bronze_ingest
+      tasks:
+        - task_key: bronze_ingest
+          notebook_task:
+            notebook_path: ./src/notebooks/gharchive_bronze_ingest.py
+
+# Workspace host + token come from DATABRICKS_HOST / DATABRICKS_TOKEN env vars.
+targets:
+  dev:
+    mode: development   # display name becomes "[dev <user>] gharchive_bronze_ingest"
+    default: true
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}

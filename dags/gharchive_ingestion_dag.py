@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
-import os
 import logging
+import os
+from datetime import datetime, timedelta
+
 import requests
-from dotenv import load_dotenv
 from airflow.decorators import dag, task
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -14,7 +15,11 @@ GITHUB_OWNER = os.getenv("GITHUB_OWNER", "apache")
 GITHUB_REPO = os.getenv("GITHUB_REPO", "airflow")
 GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
 
-UC_CATALOG, UC_SCHEMA, UC_VOLUME = "workspace", "bronze", "landing"  # matches gharchive_ingestion_dag.py now
+UC_CATALOG, UC_SCHEMA, UC_VOLUME = (
+    "workspace",
+    "bronze",
+    "landing",
+)  # matches gharchive_ingestion_dag.py now
 TARGET_CHUNK_BYTES = 8 * 1024**3  # ~8 GB per job
 
 log = logging.getLogger(__name__)
@@ -37,7 +42,8 @@ def plan_file_chunks():
     res.raise_for_status()
     files = [
         {"path": i["path"], "size": i.get("size", 0)}
-        for i in res.json().get("tree", []) if i["type"] == "blob"
+        for i in res.json().get("tree", [])
+        if i["type"] == "blob"
     ]
 
     chunks, current, current_size = [], [], 0
@@ -69,7 +75,9 @@ def upload_chunk(chunk: list[dict]):
             volume_path = f"/Volumes/{UC_CATALOG}/{UC_SCHEMA}/{UC_VOLUME}/files/{file_name}"
             put_res = requests.put(
                 f"{DATABRICKS_INSTANCE}/api/2.0/fs/files{volume_path}",
-                headers=databricks_headers, data=file_res.content, timeout=180,
+                headers=databricks_headers,
+                data=file_res.content,
+                timeout=180,
             )
             put_res.raise_for_status()
             uploaded += 1

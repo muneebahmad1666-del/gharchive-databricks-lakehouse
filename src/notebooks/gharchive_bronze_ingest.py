@@ -1,23 +1,30 @@
-# Databricks notebook source
-# Incrementally loads raw GH Archive files from the Volume into the bronze table (Auto Loader).
-from pyspark.sql import functions as F
+from pyspark.sql import SparkSession, functions as F
 
-SOURCE_PATH = "/Volumes/workspace/bronze/raw_landing/gharchive/"
-CHECKPOINT_PATH = "/Volumes/workspace/bronze/raw_landing/_checkpoints/gharchive_events_raw"
-TARGET_TABLE = "workspace.bronze.gharchive_events_raw"
+def run_bronze_ingest(spark: SparkSession = None) -> None:
+    spark = spark or SparkSession.builder.getOrCreate()
 
-(
-    spark.readStream.format("cloudFiles")
-    .option("cloudFiles.format", "text")
-    .option("pathGlobFilter", "*.json.gz")
-    .load(SOURCE_PATH)
-    .select(
-        F.col("value").alias("raw_json"),
-        F.col("_metadata.file_path").alias("source_file"),
-        F.current_timestamp().alias("ingested_at"),
+    SOURCE_PATH = "/Volumes/workspace/bronze/raw_landing/gharchive/"
+    CHECKPOINT_PATH = "/Volumes/workspace/bronze/raw_landing/_checkpoints/gharchive_events_raw"
+    SCHEMA_PATH = "/Volumes/workspace/bronze/raw_landing/_schemas/gharchive_events_raw"
+    TARGET_TABLE = "workspace.bronze.gharchive_events_raw"
+
+    (
+        spark.readStream.format("cloudFiles")
+        .option("cloudFiles.format", "text")
+        .option("cloudFiles.schemaLocation", SCHEMA_PATH)
+        .option("pathGlobFilter", "*.json.gz")
+        .load(SOURCE_PATH)
+        .select(
+            F.col("value").alias("raw_json"),
+            F.col("_metadata.file_path").alias("source_file"),
+            F.current_timestamp().alias("ingested_at"),
+        )
+        .writeStream.option("checkpointLocation", CHECKPOINT_PATH)
+        .trigger(availableNow=True)
+        .toTable(TARGET_TABLE)
+        .awaitTermination()
     )
-    .writeStream.option("checkpointLocation", CHECKPOINT_PATH)
-    .trigger(availableNow=True)
-    .toTable(TARGET_TABLE)
-    .awaitTermination()
-)
+
+
+if __name__ == "__main__":
+    run_bronze_ingest()

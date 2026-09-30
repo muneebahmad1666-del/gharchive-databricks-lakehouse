@@ -15,6 +15,9 @@ def run_bronze_ingest(spark: SparkSession = None) -> None:
         .option("cloudFiles.format", "text")
         .option("cloudFiles.schemaLocation", SCHEMA_PATH)
         .option("pathGlobFilter", "*.json.gz")
+        # ──► MEMORY GUARDRAIL FOR FREE TIERS ◄──
+        # Limits Spark to reading 10 files at a time to protect cluster RAM
+        .option("cloudFiles.maxFilesPerTrigger", 10)
         .load(SOURCE_PATH)
         .select(
             F.col("value").alias("raw_json"),

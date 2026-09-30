@@ -16,4 +16,3 @@ jobs:
       - uses: databricks/setup-cli@main
       - run: databricks bundle validate -t prod
       - run: databricks bundle deploy -t prod
-      - run: databricks bundle run gharchive_bronze_ingest -t prod

@@ -10,17 +10,29 @@ load_dotenv()
 DATABRICKS_INSTANCE = os.getenv("DATABRICKS_INSTANCE")
 DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_OWNER = os.getenv("GITHUB_OWNER", "apache")
+GITHUB_REPO = os.getenv("GITHUB_REPO", "airflow")
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
 
-UC_CATALOG, UC_SCHEMA, UC_VOLUME = "workspace", "default", "raw_landing"
+UC_CATALOG, UC_SCHEMA, UC_VOLUME = "workspace", "bronze", "landing"  # matches gharchive_ingestion_dag.py now
 TARGET_CHUNK_BYTES = 8 * 1024**3  # ~8 GB per job
 
 log = logging.getLogger(__name__)
+
+DEFAULT_ARGS = {
+    "owner": "muneeb_ahmad",
+    "depends_on_past": False,
+    "start_date": datetime(2026, 1, 1),
+    "retries": 2,
+    "retry_delay": timedelta(minutes=2),
+}
+
 
 @task
 def plan_file_chunks():
     """Fetch the full repo tree (with real sizes) and bin-pack it into ~8GB chunks."""
     headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
-    url = "https://api.github.com/repos/OWNER/REPO/git/trees/main?recursive=1"
+    url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/git/trees/{GITHUB_BRANCH}?recursive=1"
     res = requests.get(url, headers=headers)
     res.raise_for_status()
     files = [
@@ -37,19 +49,19 @@ def plan_file_chunks():
         current_size += f["size"]
     if current:
         chunks.append(current)
-    return chunks  # e.g. 10 chunks, each ~8GB -> dynamic mapping fans these out
+    return chunks
 
 
 @task
-def upload_chunk(chunk):
-    """One of the N parallel ~8GB jobs -- uploads its assigned files to the Volume."""
+def upload_chunk(chunk: list[dict]):
+    """One of the N parallel jobs -- uploads its assigned files to the Volume."""
     github_headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
     databricks_headers = {"Authorization": f"Bearer {DATABRICKS_TOKEN}"}
     uploaded, failed = 0, 0
 
     for f in chunk:
         try:
-            raw_url = f"https://raw.githubusercontent.com/OWNER/REPO/main/{f['path']}"
+            raw_url = f"https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{GITHUB_BRANCH}/{f['path']}"
             file_res = requests.get(raw_url, headers=github_headers, timeout=60)
             file_res.raise_for_status()
 
@@ -66,11 +78,19 @@ def upload_chunk(chunk):
             log.warning(f"Skipped {f['path']}: {e}")
 
     log.info(f"Chunk done: {uploaded} uploaded, {failed} failed")
+    if uploaded == 0:
+        raise ValueError("No files uploaded -- check GITHUB_OWNER/GITHUB_REPO and credentials.")
 
 
-@dag(schedule=None, start_date=datetime(2026, 1, 1), catchup=False)
-def multi_source_ingestion():
+@dag(
+    dag_id="github_files_ingestion_dag",
+    default_args=DEFAULT_ARGS,
+    schedule=None,
+    catchup=False,
+)
+def github_files_ingestion():
     chunks = plan_file_chunks()
-    upload_chunk.expand(chunk=chunks)  # this is the dynamic mapping -- one task instance per chunk
+    upload_chunk.expand(chunk=chunks)
 
-multi_source_ingestion()
+
+github_files_ingestion()

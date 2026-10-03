@@ -1,104 +1,54 @@
-import logging
-import os
 from datetime import datetime, timedelta
 
-import requests
-from airflow.decorators import dag, task
-from dotenv import load_dotenv
-
-load_dotenv()
-
-DATABRICKS_INSTANCE = os.getenv("DATABRICKS_INSTANCE")
-DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_OWNER = os.getenv("GITHUB_OWNER", "apache")
-GITHUB_REPO = os.getenv("GITHUB_REPO", "airflow")
-GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
-
-UC_CATALOG, UC_SCHEMA, UC_VOLUME = (
-    "workspace",
-    "bronze",
-    "landing",
-)  # matches gharchive_ingestion_dag.py now
-TARGET_CHUNK_BYTES = 8 * 1024**3  # ~8 GB per job
-
-log = logging.getLogger(__name__)
-
-DEFAULT_ARGS = {
-    "owner": "muneeb_ahmad",
-    "depends_on_past": False,
-    "start_date": datetime(2026, 1, 1),
-    "retries": 2,
-    "retry_delay": timedelta(minutes=2),
-}
-
-
-@task
-def plan_file_chunks():
-    """Fetch the full repo tree (with real sizes) and bin-pack it into ~8GB chunks."""
-    headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
-    url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/git/trees/{GITHUB_BRANCH}?recursive=1"
-    res = requests.get(url, headers=headers)
-    res.raise_for_status()
-    files = [
-        {"path": i["path"], "size": i.get("size", 0)}
-        for i in res.json().get("tree", [])
-        if i["type"] == "blob"
-    ]
-
-    chunks, current, current_size = [], [], 0
-    for f in sorted(files, key=lambda x: -x["size"]):
-        if current_size + f["size"] > TARGET_CHUNK_BYTES and current:
-            chunks.append(current)
-            current, current_size = [], 0
-        current.append(f)
-        current_size += f["size"]
-    if current:
-        chunks.append(current)
-    return chunks
-
-
-@task
-def upload_chunk(chunk: list[dict]):
-    """One of the N parallel jobs -- uploads its assigned files to the Volume."""
-    github_headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
-    databricks_headers = {"Authorization": f"Bearer {DATABRICKS_TOKEN}"}
-    uploaded, failed = 0, 0
-
-    for f in chunk:
-        try:
-            raw_url = f"https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{GITHUB_BRANCH}/{f['path']}"
-            file_res = requests.get(raw_url, headers=github_headers, timeout=60)
-            file_res.raise_for_status()
-
-            file_name = f["path"].replace("/", "_")
-            volume_path = f"/Volumes/{UC_CATALOG}/{UC_SCHEMA}/{UC_VOLUME}/files/{file_name}"
-            put_res = requests.put(
-                f"{DATABRICKS_INSTANCE}/api/2.0/fs/files{volume_path}",
-                headers=databricks_headers,
-                data=file_res.content,
-                timeout=180,
-            )
-            put_res.raise_for_status()
-            uploaded += 1
-        except requests.exceptions.RequestException as e:
-            failed += 1
-            log.warning(f"Skipped {f['path']}: {e}")
-
-    log.info(f"Chunk done: {uploaded} uploaded, {failed} failed")
-    if uploaded == 0:
-        raise ValueError("No files uploaded -- check GITHUB_OWNER/GITHUB_REPO and credentials.")
+from airflow.sdk import dag, task
 
 
 @dag(
-    dag_id="github_files_ingestion_dag",
-    default_args=DEFAULT_ARGS,
+    dag_id="gharchive_ingestion",
+    start_date=datetime(2026, 1, 1),
     schedule=None,
     catchup=False,
+    max_active_tasks=4,
+    params={"start_date": "2023-01-01", "days": 1, "hours_per_chunk": 6},
 )
-def github_files_ingestion():
-    chunks = plan_file_chunks()
-    upload_chunk.expand(chunk=chunks)
+
+@dag(
+    dag_id="databricks_trigger",
+    start_date=datetime(2026, 10, 3),
+    schedule="30 22 * * *",
+    catchup=True,
+    max_active_tasks=4
+)
+
+def gharchive_ingestion():
+    @task
+    def plan_file_chunks(**context):
+        from gharchive_lakehouse.plan_gharchive_chunks import plan_gharchive_chunks
+
+        p = context["params"]
+        return plan_gharchive_chunks(p["start_date"], p["days"], p["hours_per_chunk"])
+
+    @task(retries=3, retry_delay=timedelta(minutes=2), max_active_tis_per_dag=4)
+    def upload_chunk(urls: list[str]):
+        from gharchive_lakehouse.upload_chunk import upload_chunk_files
+
+        return upload_chunk_files(urls)
+
+    upload_chunk.expand(urls=plan_file_chunks())
 
 
-github_files_ingestion()
+
+
+def databricks_trigger():
+    @task(retries=3, retry_delay=timedelta(minutes=2), max_active_tis_per_dag=4)
+    from airflow.providers.databricks.operators.databricks import DatabricksRunNowOperator
+
+    return DatabricksRunNowOperator(
+        task_id="databricks_connect",
+        databricks_conn_id="databricks_default",
+        job_id=834425134513479,  # Replace with your actual Databricks job ID
+    )
+
+gharchive_ingestion() >> databricks_trigger()
+
+

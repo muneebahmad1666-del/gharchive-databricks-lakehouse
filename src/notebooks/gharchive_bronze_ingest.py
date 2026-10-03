@@ -25,8 +25,9 @@ def run_bronze_ingest(spark: SparkSession = None) -> None:
             F.current_timestamp().alias("ingested_at"),
         )
         .writeStream.option("checkpointLocation", CHECKPOINT_PATH)
+        .format("delta")
         .trigger(availableNow=True)
-        .toTable(TARGET_TABLE)
+        .start(TARGET_TABLE)
         .awaitTermination()
     )
 

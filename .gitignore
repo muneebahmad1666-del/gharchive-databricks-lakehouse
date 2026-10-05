@@ -1,11 +1,20 @@
-airflow/.env
+# secrets
+.env
+
+# python
 .venv/
-**/.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
-!logs/.gitkeep
+
+# runtime output
+logs/
+
+# dbt
+gold/target/
+gold/dbt_packages/
+
+# tools
 .databricks/
 .vscode/
-logs/*

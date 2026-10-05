@@ -4,7 +4,11 @@ import tempfile
 
 import requests
 
-from gharchive_lakehouse.config import VOLUME_ROOT, get_databricks_host, get_databricks_token
+from gharchive_lakehouse.config import (
+    VOLUME_ROOT,
+    get_databricks_host,
+    get_databricks_token,
+)
 
 log = logging.getLogger(__name__)
 
@@ -15,7 +19,9 @@ def _volume_file_url(host: str, file_name: str) -> str:
 
 def _ensure_volume_dir(host: str, headers: dict) -> None:
     """Create the target folder in the Volume (harmless if it already exists)."""
-    resp = requests.put(f"{host}/api/2.0/fs/directories{VOLUME_ROOT}", headers=headers, timeout=30)
+    resp = requests.put(
+        f"{host}/api/2.0/fs/directories{VOLUME_ROOT}", headers=headers, timeout=30
+    )
     resp.raise_for_status()
 
 
@@ -54,12 +60,15 @@ def upload_chunk_files(urls: list[str]) -> dict[str, int]:
                     continue
                 src.raise_for_status()
                 with open(tmp_path, "wb") as out:
-                    for block in src.iter_content(chunk_size=8 * 1024 * 1024):
-                        out.write(block)
+                    out.writelines(src.iter_content(chunk_size=8 * 1024 * 1024))
 
             with open(tmp_path, "rb") as fh:
                 put = requests.put(
-                    target, headers=headers, params={"overwrite": "true"}, data=fh, timeout=900
+                    target,
+                    headers=headers,
+                    params={"overwrite": "true"},
+                    data=fh,
+                    timeout=900,
                 )
             put.raise_for_status()
             uploaded += 1
@@ -70,7 +79,12 @@ def upload_chunk_files(urls: list[str]) -> dict[str, int]:
             if tmp_path and os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
-    summary = {"uploaded": uploaded, "skipped": skipped, "missing": missing, "failed": len(failed)}
+    summary = {
+        "uploaded": uploaded,
+        "skipped": skipped,
+        "missing": missing,
+        "failed": len(failed),
+    }
     log.info("Chunk summary: %s", summary)
     if failed:  # fail the task so Airflow retries; finished files will be skipped
         raise RuntimeError(f"{len(failed)} file(s) failed, e.g. {failed[:3]}")

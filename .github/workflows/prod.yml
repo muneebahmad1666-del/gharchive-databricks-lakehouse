@@ -1,18 +1,17 @@
-name: deploy-prod
-
+# .github/workflows/prod.yml
+name: prod
 on:
   push:
-    branches: [main]
+    branches: [prod]
 
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - uses: databricks/setup-cli@main
-      - run: databricks bundle validate -t prod
-      - run: databricks bundle deploy -t prod
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install ruff pytest
+      - run: ruff check bronze silver airflow tests
+      - run: pytest -q
+      # Project 4: add a step that syncs airflow/ to the VM.

@@ -1,6 +1,5 @@
 import os
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 from airflow.providers.databricks.operators.databricks import DatabricksRunNowOperator
 from airflow.sdk import Asset, dag, task
 
@@ -11,7 +10,7 @@ files_landed = Asset("gharchive_files_landed")
 # ---------- DAG 1: download GH Archive files into the Databricks Volume ----------
 @dag(
     dag_id="gharchive_ingestion",
-    start_date=datetime(2026, 10, 3),
+    start_date=datetime(2026, 10, 3, tzinfo=timezone.utc),
     schedule=None,  # set a cron here later if you want it to run on a schedule
     catchup=False,
     max_active_runs=1,
@@ -43,7 +42,7 @@ def gharchive_ingestion():
 # ---------- DAG 2: run the Databricks job (notebook) when new files have landed ----------
 @dag(
     dag_id="databricks_trigger",
-    start_date=datetime(2026, 10, 3),
+    start_date=datetime(2026, 10, 3, tzinfo=timezone.utc),
     schedule=("40 14 4 10 *"),  # starts when DAG 1 updates the asset
     catchup=False,
     max_active_runs=1,  # never two runs on the same Auto Loader checkpoint

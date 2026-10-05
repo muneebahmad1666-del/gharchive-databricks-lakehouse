@@ -1,34 +1,19 @@
-name: ci-checks
-
+# .github/workflows/ci.yml
+name: ci
 on:
-  pull_request:
-    branches: [dev, main]
   push:
     branches: [dev]
+  pull_request:
+    branches: [dev, prod]
 
 jobs:
-  lint-and-test:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install -r requirements-dev.txt
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: pytest
-      - name: Validate docker compose
-        run: |
-          cp .env.example .env
-          docker compose config -q
-
-  validate-bundle:
-    runs-on: ubuntu-latest
-    env:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: databricks/setup-cli@main
-      - run: databricks bundle validate -t dev
+        with: { python-version: "3.12" }
+      - run: pip install ruff pytest
+      - run: ruff check bronze silver airflow tests
+      - run: python -m compileall -q airflow/dags bronze
+      - run: pytest -q

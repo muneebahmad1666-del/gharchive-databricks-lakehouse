@@ -6,7 +6,9 @@ def run_bronze_ingest(spark: SparkSession = None) -> None:
     spark = spark or SparkSession.builder.getOrCreate()
 
     source_path = "/Volumes/workspace/bronze/raw_landing/gharchive/"
-    checkpoint_path = "/Volumes/workspace/bronze/raw_landing/_checkpoints/gharchive_events_raw"
+    checkpoint_path = (
+        "/Volumes/workspace/bronze/raw_landing/_checkpoints/gharchive_events_raw"
+    )
     target_table = "workspace.bronze.gharchive_events_raw"
 
     raw = (

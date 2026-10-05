@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 from gharchive_lakehouse.config import GHARCHIVE_BASE_URL
 
 log = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ def plan_gharchive_chunks(
     if days < 1 or hours_per_chunk < 1:
         raise ValueError("days and hours_per_chunk must be >= 1")
 
-    start = datetime.strptime(start_date, "%Y-%m-%d")
+    start = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     # Generate every explicit hour across the requested day range
     hours = [start + timedelta(days=d, hours=h) for d in range(days) for h in range(24)]
 
@@ -30,5 +29,7 @@ def plan_gharchive_chunks(
         for i in range(0, len(hours), hours_per_chunk)
     ]
 
-    log.info(f"Planned {len(chunks)} chunks with a max size of {hours_per_chunk} hours per chunk.")
+    log.info(
+        f"Planned {len(chunks)} chunks with a max size of {hours_per_chunk} hours per chunk."
+    )
     return chunks

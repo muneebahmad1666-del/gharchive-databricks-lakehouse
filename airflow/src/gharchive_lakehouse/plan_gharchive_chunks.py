@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
+
 from gharchive_lakehouse.config import GHARCHIVE_BASE_URL
 
 log = logging.getLogger(__name__)

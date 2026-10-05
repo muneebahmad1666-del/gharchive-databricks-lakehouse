@@ -15,9 +15,7 @@ def _volume_file_url(host: str, file_name: str) -> str:
 
 def _ensure_volume_dir(host: str, headers: dict) -> None:
     """Create the target folder in the Volume (harmless if it already exists)."""
-    resp = requests.put(
-        f"{host}/api/2.0/fs/directories{VOLUME_ROOT}", headers=headers, timeout=30
-    )
+    resp = requests.put(f"{host}/api/2.0/fs/directories{VOLUME_ROOT}", headers=headers, timeout=30)
     resp.raise_for_status()
 
 

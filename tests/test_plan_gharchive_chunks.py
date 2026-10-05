@@ -1,5 +1,4 @@
 import pytest
-
 from gharchive_lakehouse.plan_gharchive_chunks import plan_gharchive_chunks
 
 

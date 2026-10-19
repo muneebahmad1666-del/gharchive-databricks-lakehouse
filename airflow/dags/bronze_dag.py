@@ -1,7 +1,5 @@
 import os
 from datetime import datetime, timedelta, timezone
-
-from airflow.providers.databricks.operators.databricks import DatabricksRunNowOperator
 from airflow.sdk import Asset, dag, task
 
 # Signal that connects the two DAGs
@@ -38,25 +36,3 @@ def gharchive_ingestion():
 
     uploads = upload_chunk.expand(urls=plan_file_chunks())
     uploads >> mark_landed()
-
-
-# ---------- DAG 2: run the Databricks job (notebook) when new files have landed ----------
-@dag(
-    dag_id="databricks_trigger",
-    start_date=datetime(2026, 10, 3, tzinfo=timezone.utc),
-    schedule=("40 14 4 10 *"),  # starts when DAG 1 updates the asset
-    catchup=False,
-    max_active_runs=1,  # never two runs on the same Auto Loader checkpoint
-)
-def databricks_trigger():
-    DatabricksRunNowOperator(
-        task_id="databricks_connect",
-        databricks_conn_id=("databricks_default"),
-        job_id=int(os.getenv("DATABRICKS_JOB_ID")),
-        retries=1,
-        retry_delay=timedelta(minutes=2),
-    )
-
-
-gharchive_ingestion()
-databricks_trigger()

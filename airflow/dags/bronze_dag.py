@@ -36,3 +36,5 @@ def gharchive_ingestion():
 
     uploads = upload_chunk.expand(urls=plan_file_chunks())
     uploads >> mark_landed()
+
+gharchive_ingestion()

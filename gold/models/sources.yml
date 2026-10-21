@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: silver
+    database: workspace
+    schema: "{{ 'silver' if target.name == 'prod' else 'silver_dev' }}"
+    description: Clean, quality-checked silver tables (output of the silver pipeline).
+    tables:
+      - name: events
+      - name: pull_request_events
+      - name: push_events
+      - name: issue_events
+      - name: watch_events
+      - name: fork_events
+      - name: create_events

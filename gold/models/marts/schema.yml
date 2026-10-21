@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: mart_repo_activity_daily
+    description: "Repo x day: every activity type side by side."
+  - name: mart_pr_by_language_daily
+    description: "Language x day: PR volume, size and merge time."
+  - name: mart_event_type_hourly
+    description: "Event type x hour x day."
+  - name: mart_repo_leaderboard
+    description: "One row per repo with all-time totals and ranks."
+    columns:
+      - name: repo_id
+        data_tests: [unique, not_null]
+  - name: mart_contributor_activity
+    description: "One row per human actor (bots excluded)."
+    columns:
+      - name: actor_id
+        data_tests: [unique, not_null]

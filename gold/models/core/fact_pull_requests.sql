@@ -1,0 +1,37 @@
+-- grain: one row per pull request event (a PR produces several: opened, closed, ...)
+-- date_key is the event date; pr_created_date_key and merged_date_key are extra roles of dim_date
+select
+    p.event_id,
+    p.pr_id,
+    p.pr_number,
+    {{ date_key('p.event_date') }}        as date_key,
+    cast(p.event_hour as int)             as hour_key,
+    {{ date_key('p.pr_created_at') }}     as pr_created_date_key,
+    {{ date_key('p.merged_at') }}         as merged_date_key,
+    p.repo_id,
+    p.actor_id,
+    coalesce(a.is_bot, false)             as actor_is_bot,
+    p.pr_author,
+    p.pr_author_type,
+    p.is_bot                              as pr_author_is_bot,
+    p.author_association,
+    p.action,
+    p.pr_state,
+    p.is_draft,
+    p.is_merged,
+    p.pr_size,
+    p.repo_language,
+    p.base_branch,
+    p.additions,
+    p.deletions,
+    p.lines_changed,
+    p.changed_files,
+    p.commit_count,
+    p.merge_time_hours,
+    p.merged_hour,
+    p.created_at,
+    p.pr_created_at,
+    p.merged_at,
+    p.closed_at
+from {{ source('silver', 'pull_request_events') }} p
+left join {{ ref('dim_actor') }} a on a.actor_id = p.actor_id

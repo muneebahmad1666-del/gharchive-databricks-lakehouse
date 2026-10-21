@@ -1,0 +1,278 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "One row per calendar day for every year in the data."
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+  - name: dim_time
+    description: "The 24 hours of the day with a day-part label."
+    columns:
+      - name: hour_key
+        data_tests: [unique, not_null]
+  - name: dim_event_type
+    description: "Every GitHub event type with a business category (-1 = unknown)."
+    columns:
+      - name: event_type_key
+        data_tests: [unique, not_null]
+  - name: dim_actor
+    description: "One row per actor (latest login). Conformed: shared by every fact."
+    columns:
+      - name: actor_id
+        data_tests: [unique, not_null]
+  - name: dim_repo
+    description: "One row per repo (latest name, most recent known language). Conformed: shared by every fact."
+    columns:
+      - name: repo_id
+        data_tests: [unique, not_null]
+  - name: fact_events
+    description: "Grain: one row per event."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id
+      - name: event_type_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_event_type')
+                field: event_type_key
+  - name: fact_pull_requests
+    description: "Grain: one row per pull request event. Uses dim_date in three roles."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id
+      - name: pr_created_date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: merged_date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+  - name: fact_pushes
+    description: "Grain: one row per push."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id
+  - name: fact_issues
+    description: "Grain: one row per issue event."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id
+  - name: fact_stars
+    description: "Grain: one row per star."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id
+  - name: fact_forks
+    description: "Grain: one row per fork."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id
+  - name: fact_creates
+    description: "Grain: one row per branch, tag or repository creation."
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: hour_key
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repo')
+                field: repo_id
+      - name: actor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_actor')
+                field: actor_id

@@ -1,10 +1,21 @@
-name: gharchive_dbt
-version: "0.1.0"
-profile: gharchive_dbt
+name: gharchive_gold
+version: "1.0.0"
+config-version: 2
+profile: gharchive_gold
+
 model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
 models:
-  gharchive_dbt:
-    staging:
-      +schema: silver
+  gharchive_gold:
+    +materialized: table
+    core:
+      +tags: ["core"]      # conformed dimensions + fact tables (galaxy schema)
     marts:
-      +schema: gold
+      +tags: ["marts"]     # business-ready tables built from dims and facts
+    obt:
+      +tags: ["obt"]       # optional one-big-tables (off by default)
+
+vars:
+  build_obt: false         # dbt build --vars '{build_obt: true}' to also build the OBT models

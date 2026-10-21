@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: silver
     database: workspace
-    schema: "{{ 'silver' if target.name == 'prod' else 'silver_dev' }}"
+    schema: "{{ 'silver' if var('env', target.name) == 'prod' else 'silver_dev' }}"
     description: Clean, quality-checked silver tables (output of the silver pipeline).
     tables:
       - name: events

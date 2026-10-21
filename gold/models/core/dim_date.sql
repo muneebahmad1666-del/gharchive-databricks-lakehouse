@@ -1,7 +1,17 @@
--- one row per calendar day, for every year that appears in the data
+-- one row per calendar day, from Jan 1 of the earliest year any fact points at
+-- to Dec 31 of the latest event year. PRs are often opened long before the events
+-- window, so pr_created_at and merged_at must be inside the range.
 with bounds as (
-    select min(event_date) as lo, max(event_date) as hi
-    from {{ source('silver', 'events') }}
+    select
+        greatest(
+            least(
+                (select min(event_date) from {{ source('silver', 'events') }}),
+                (select min(to_date(pr_created_at)) from {{ source('silver', 'pull_request_events') }}),
+                (select min(to_date(merged_at)) from {{ source('silver', 'pull_request_events') }})
+            ),
+            date'2008-01-01'
+        ) as lo,
+        (select max(event_date) from {{ source('silver', 'events') }}) as hi
 ),
 days as (
     select explode(sequence(

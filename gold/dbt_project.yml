@@ -1,14 +1,14 @@
-name: gharchive_gold
+name: gold
 version: "1.0.0"
 config-version: 2
-profile: gharchive_gold
+profile: gold
 
 model-paths: ["models"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
 
 models:
-  gharchive_gold:
+  gold:
     +materialized: table
     core:
       +tags: ["core"]      # conformed dimensions + fact tables (galaxy schema)
@@ -18,4 +18,4 @@ models:
       +tags: ["obt"]       # optional one-big-tables (off by default)
 
 vars:
-  build_obt: false         # dbt build --vars '{build_obt: true}' to also build the OBT models
+  build_obt: true         # dbt build --vars '{build_obt: true}' to also build the OBT models

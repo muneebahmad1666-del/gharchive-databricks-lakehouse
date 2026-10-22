@@ -75,13 +75,13 @@ Screenshots from a full production run of the medallion pipeline (Bronze → Sil
 
 <img src="images/ss95.png" alt="Bronze pipleine gharchive_events_raw" width="800">
 
-*`Bronze pipeline`  data of ingested gharchive_events_raw delta table in json format*
+*`Bronze pipeline`Raw data of ingested gharchive_events_raw delta table in json format*
 
 ### Silver layer
 
 <img src="images/ss96.png" width="800">
 
-*`dq_results` data of data quality checks DQ*
+*`dq_results`quality checks DQ results*
 
 ### Silver layer
 
@@ -89,7 +89,7 @@ Screenshots from a full production run of the medallion pipeline (Bronze → Sil
 
 *`silver pipeline` all the tables count how much rows conatin every single table of silver layer*
 
-<img src="docs/images/ss98.png" alt="Row counts across gold tables" width="800">
+<img src="images/ss98.png" alt="Row counts across gold tables" width="800">
 
 *Gold row counts across the 18 tables: dimensions, facts and marts.*
 

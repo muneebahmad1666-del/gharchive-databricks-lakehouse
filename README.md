@@ -59,31 +59,35 @@ Screenshots from a full production run of the medallion pipeline (Bronze → Sil
 
 *Gold run: `dbt_build_gold` triggers the Databricks dbt job via `DatabricksRunNowOperator` and succeeded in about 5 minutes.*
 
+### Gold layer
+
+<img src="images/ss93.png" alt="This is the dbt pipeline dims facts and marts models successfully runs" width="800">
+
+*Gold layer building all the models dim facts and marts.*
+
+### Gold layer
+
+<img src="images/ss94.png"  width="800">
+
+*Query history of gold pipeline*
+
 ### Bronze layer
 
-<img src="images/ss93.png" alt="Databricks catalog showing bronze gharchive_events_raw table and raw_landing volume" width="800">
+<img src="images/ss95.png" alt="Bronze pipleine gharchive_events_raw" width="800">
 
-*Raw GH Archive events landed in the `raw_landing` volume and loaded into `bronze.gharchive_events_raw`, with the original JSON preserved in `raw_content`.*
+*`Bronze pipeline`  data of ingested gharchive_events_raw delta table in json format*
 
 ### Silver layer
 
-<img src="images/ss94.png" alt="Row counts across silver tables" width="800">
+<img src="images/ss96.png" width="800">
 
-*Silver row counts across the 17 tables: per-event-type tables, parsed variants, and the quarantine table.*
+*`dq_results` data of data quality checks DQ*
 
-<img src="images/ss95.png" alt="silver.dq_results table listing rules, techniques, severity and failing rows" width="800">
+### Silver layer
 
-*`silver.dq_results` records every rule run: schema evolution, cleansing, and validation checks, with severity, failing rows and total rows.*
+<img src="images/ss97.png" alt="silver pipeline full count" width="800">
 
-### Gold layer (dbt)
-
-<img src="images/ss96.png" alt="dbt build log showing all 109 checks passed" width="800">
-
-*`dbt build` on prod via the `gold_dbt_prod` job: 18 table models and 91 data tests, `PASS=109 WARN=0 ERROR=0 TOTAL=109`.*
-
-<img src="images/ss97.png" alt="Databricks Query History filtered to the gold dbt job run" width="800">
-
-*Query History for the same job run: the `create or replace table` statements and test queries dbt issued on serverless compute.*
+*`silver pipeline` all the tables count how much rows conatin every single table of silver layer*
 
 <img src="docs/images/ss98.png" alt="Row counts across gold tables" width="800">
 
@@ -123,6 +127,7 @@ The pipeline handles 15 event types. Six of them get their own typed table: `Pus
 gharchive-databricks-lakehouse/
 ├── airflow/
 │   └── dags/
+|       ├── bronze_dag.py
 │       ├── silver_dag.py          DAG: silver_events -> silver_transformations -> silver_quality_checks
 │       └── gold_dag.py            DAG: runs the Databricks job that builds gold with dbt
 ├── silver/
@@ -143,7 +148,7 @@ gharchive-databricks-lakehouse/
     │   ├── sources.yml            points at the clean silver tables
     │   ├── core/                  5 dimensions + 7 facts (+ schema.yml tests)
     │   ├── marts/                 5 business marts
-    │   └── obt/                   optional one-big-table (off by default)
+    │   └── obt/                   optional one-big-table 1 is created
     ├── macros/date_key.sql
     └── tests/                     3 custom reconciliation tests
 ```

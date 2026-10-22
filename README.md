@@ -89,6 +89,8 @@ Screenshots from a full production run of the medallion pipeline (Bronze → Sil
 
 *`silver pipeline` all the tables count how much rows conatin every single table of silver layer*
 
+### Gold layer
+
 <img src="images/ss98.png" alt="Row counts across gold tables" width="800">
 
 *Gold row counts across the 18 tables: dimensions, facts and marts.*
